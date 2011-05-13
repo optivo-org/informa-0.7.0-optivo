@@ -1,0 +1,13 @@
+de.nava.informa.core
+de.nava.informa.exporters
+de.nava.informa.impl.basic
+de.nava.informa.impl.hibernate
+de.nava.informa.parsers
+de.nava.informa.search
+de.nava.informa.utils
+de.nava.informa.utils.cleaner
+de.nava.informa.utils.manager
+de.nava.informa.utils.manager.hibernate
+de.nava.informa.utils.manager.memory
+de.nava.informa.utils.poller
+de.nava.informa.utils.toolkit
