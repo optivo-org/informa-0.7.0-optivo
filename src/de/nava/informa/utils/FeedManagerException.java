@@ -35,11 +35,15 @@ package de.nava.informa.utils;
  */
 public class FeedManagerException extends Exception {
 
-  private static final long serialVersionUID = -1982751404099834335L;
+    private static final long serialVersionUID = -1982751404099834335L;
 
-  public FeedManagerException(Exception e) {
-    super(e.getMessage());
-    initCause(e);
-  }
+    public FeedManagerException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public FeedManagerException(Exception e) {
+        super(e.getMessage());
+        initCause(e);
+    }
 
 }

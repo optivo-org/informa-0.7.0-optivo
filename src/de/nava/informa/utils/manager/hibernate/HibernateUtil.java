@@ -46,272 +46,264 @@ import sun.misc.Lock;
  */
 final class HibernateUtil {
 
-  private static final Logger       LOG = Logger.getLogger(HibernateUtil.class.getName());
-  private static final ThreadLocal<Session>  SESSION = new ThreadLocal<Session>();
+    private static final Logger LOG = Logger.getLogger(HibernateUtil.class.getName());
+    private static final ThreadLocal<Session> SESSION = new ThreadLocal<Session>();
 
-  private static SessionHandler     sessionHandler;
-  private static boolean            inited;
-  private static Lock               lock;
+    private static SessionHandler sessionHandler;
+    private static boolean inited;
+    private static Lock lock;
 
-  static {
-    inited = false;
-    lock = new Lock();
-  }
-
-  /**
-   * Hidden constructor of utility class.
-   */
-  private HibernateUtil() {
-  }
-
-  /**
-   * Performs initialization.
-   *
-   * @throws HibernateException if problems with Hibernate occur.
-   */
-  private static synchronized void init()
-    throws HibernateException {
-
-    // Create the SessionFactory
-    sessionHandler = SessionHandler.getInstance(System.getProperties());
-    inited = true;
-  }
-
-  /**
-   * Opens new session or returns currently open session for this thread.
-   *
-   * @return session object.
-   *
-   * @throws HibernateException if something with session creation goes wrong.
-   */
-  public static Session openSession() throws HibernateException {
-    if (!inited) init();
-
-    Session s = SESSION.get();
-    if (s != null) {
-      LOG.log(Level.WARNING, "Openning session more than once from the same thread!",
-        new Exception("Dump"));
-
-      s.clear();
-
-      return s;
-    } else
-    {
-      try {
-        lock.lock();
-      } catch (InterruptedException e) {
-        throw new RuntimeException("Interrupted waiting for session.");
-      }
-
-      s = sessionHandler.getSession();
-      SESSION.set(s);
+    static {
+        inited = false;
+        lock = new Lock();
     }
 
-    return s;
-  }
-
-  /**
-   * Closes previousely opened session.
-   */
-  public static void closeSession() {
-    Session s = SESSION.get();
-
-    SESSION.set(null);
-
-    if (s != null) {
-      try {
-        s.close();
-      } catch (HibernateException e) {
-        LOG.log(Level.SEVERE, "Could not close session.", e);
-        // We can do nothing here.
-        // The other session will be opened next time.
-      }
-
-      lock.unlock();
-    } else {
-      LOG.log(Level.SEVERE, "Broken sequence of calls. Session is not opened or already closed.");
-      try {
-        throw new NullPointerException();
-      } catch (NullPointerException e) {
-        e.printStackTrace();
-      }
+    /**
+     * Hidden constructor of utility class.
+     */
+    private HibernateUtil() {
     }
-  }
 
-  /**
-   * Makes a try to lock object. This will save us great number of SQL statements
-   * in several cases. It's not a big problem if locking is not possible.
-   *
-   * @param o object to lock.
-   * @param s session to lock object in.
-   */
-  public static void lock(Object o, Session s) {
-    try {
-      s.lock(o, LockMode.NONE);
-    } catch (HibernateException e) {
-      // Well, it's possible that object is dirty.
+    /**
+     * Performs initialization.
+     *
+     * @throws HibernateException if problems with Hibernate occur.
+     */
+    private static synchronized void init()
+            throws HibernateException {
+
+        // Create the SessionFactory
+        sessionHandler = SessionHandler.getInstance(System.getProperties());
+        inited = true;
     }
-  }
 
-  /**
-   * Saves object into storage.
-   *
-   * @param object  object to save.
-   *
-   * @throws PersistenceManagerException in case of any problems during saving.
-   */
-  public static void saveObject(final Object object)
-    throws PersistenceManagerException {
+    /**
+     * Opens new session or returns currently open session for this thread.
+     *
+     * @return session object.
+     * @throws HibernateException if something with session creation goes wrong.
+     */
+    public static Session openSession() throws HibernateException {
+        if (!inited) init();
 
-    // Save object in new session
-    saveObject(object, null);
-  }
+        Session s = SESSION.get();
+        if (s != null) {
+            LOG.log(Level.WARNING, "Openning session more than once from the same thread!",
+                    new Exception("Dump"));
 
-  /**
-   * Saves object into storage.
-   *
-   * @param object  object to save.
-   *
-   * @throws PersistenceManagerException in case of any problems during saving.
-   */
-  public static void saveObject(final Object object, Session session)
-    throws PersistenceManagerException {
-    boolean isForeignSession = session != null;
+            s.clear();
 
-    try {
-      // Open new session if we are not in the foreign one
-      if (!isForeignSession) {
-        session = openSession();
-      }
+            return s;
+        } else {
+            try {
+                lock.lock();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Interrupted waiting for session.");
+            }
 
-      session.save(object);
-
-      // Flush only if it's our own session
-      if (!isForeignSession) {
-        session.flush();
-        session.connection().commit();
-      }
-    } catch (Exception e) {
-      // Rollback transaction if we are owners of session
-      if (!isForeignSession) {
-        try {
-          session.connection().rollback();
-        } catch (Exception e1) {
-          // Error is not recoverable.
+            s = sessionHandler.getSession();
+            SESSION.set(s);
         }
-      }
 
-      LOG.log(Level.SEVERE, "Couldn't save object.", e);
-      throw new PersistenceManagerException("Couldn't save object.", e);
-    } finally {
-      // Close session if we had opened it
-      if (!isForeignSession) {
-        closeSession();
-      }
+        return s;
     }
-  }
 
-  /**
-   * Updates object in storage.
-   *
-   * @param object  object to update.
-   *
-   * @throws PersistenceManagerException in case of any problems during updating.
-   */
-  public static void updateObject(final Object object)
-    throws PersistenceManagerException {
+    /**
+     * Closes previousely opened session.
+     */
+    public static void closeSession() {
+        Session s = SESSION.get();
 
-    updateObject(object, null);
-  }
+        SESSION.set(null);
 
-  /**
-   * Updates object in storage.
-   *
-   * @param object  object to update.
-   * @param session session to use. If NULL then new session is opened.
-   *
-   * @throws PersistenceManagerException in case of any problems during updating.
-   */
-  public static void updateObject(final Object object, Session session)
-    throws PersistenceManagerException {
+        if (s != null) {
+            try {
+                s.close();
+            } catch (HibernateException e) {
+                LOG.log(Level.SEVERE, "Could not close session.", e);
+                // We can do nothing here.
+                // The other session will be opened next time.
+            }
 
-    boolean isForeignSession = session != null;
-
-    try {
-      // Open new session if we are not in the foreign one
-      if (!isForeignSession) {
-        session = openSession();
-      }
-
-      session.update(object);
-
-      // Flush only if it's our own session
-      if (!isForeignSession) {
-        session.flush();
-        session.connection().commit();
-      }
-    } catch (Exception e) {
-      // Rollback transaction if we are owners of session
-      if (!isForeignSession) {
-        try {
-          session.connection().rollback();
-        } catch (Exception e1) {
-          // Error is not recoverable.
+            lock.unlock();
+        } else {
+            LOG.log(Level.SEVERE, "Broken sequence of calls. Session is not opened or already closed.");
+            try {
+                throw new NullPointerException();
+            } catch (NullPointerException e) {
+            }
         }
-      }
-
-      LOG.log(Level.SEVERE, "Couldn't update object.", e);
-      throw new PersistenceManagerException("Couldn't update object.", e);
-    } finally {
-      // Close session if we had opened it
-      if (!isForeignSession) {
-        closeSession();
-      }
     }
-  }
 
-  /**
-   * Deletes object from database using existing session.
-   *
-   * @param object  object to delete.
-   * @param session session to use. If NULL then new session is opened.
-   *
-   * @throws PersistenceManagerException in case of any problems during deletion.
-   */
-  public static void deleteObject(final Object object, Session session)
-    throws PersistenceManagerException {
-
-    boolean isForeignSession = session != null;
-
-    try {
-      // Open new session if we are not in the foreign one
-      if (!isForeignSession) {
-        session = openSession();
-      }
-
-      session.delete(object);
-
-      // Flush only if it's our own session
-      if (!isForeignSession) {
-        session.flush();
-        session.connection().commit();
-      }
-    } catch (Exception e) {
-      // Rollback transaction if we are owners of session
-      if (!isForeignSession) {
+    /**
+     * Makes a try to lock object. This will save us great number of SQL statements
+     * in several cases. It's not a big problem if locking is not possible.
+     *
+     * @param o object to lock.
+     * @param s session to lock object in.
+     */
+    public static void lock(Object o, Session s) {
         try {
-          session.connection().rollback();
-        } catch (Exception e1) {
-          // Error is not recoverable.
+            s.lock(o, LockMode.NONE);
+        } catch (HibernateException e) {
+            // Well, it's possible that object is dirty.
         }
-      }
-      LOG.log(Level.SEVERE, "Couldn't delete object.", e);
-      throw new PersistenceManagerException("Couldn't delete object.", e);
-    } finally {
-      // Close session if we had opened it
-      if (!isForeignSession) {
-        closeSession();
-      }
     }
-  }
+
+    /**
+     * Saves object into storage.
+     *
+     * @param object object to save.
+     * @throws PersistenceManagerException in case of any problems during saving.
+     */
+    public static void saveObject(final Object object)
+            throws PersistenceManagerException {
+
+        // Save object in new session
+        saveObject(object, null);
+    }
+
+    /**
+     * Saves object into storage.
+     *
+     * @param object object to save.
+     * @throws PersistenceManagerException in case of any problems during saving.
+     */
+    public static void saveObject(final Object object, Session session)
+            throws PersistenceManagerException {
+        boolean isForeignSession = session != null;
+
+        try {
+            // Open new session if we are not in the foreign one
+            if (!isForeignSession) {
+                session = openSession();
+            }
+
+            session.save(object);
+
+            // Flush only if it's our own session
+            if (!isForeignSession) {
+                session.flush();
+                session.connection().commit();
+            }
+        } catch (Exception e) {
+            // Rollback transaction if we are owners of session
+            if (!isForeignSession) {
+                try {
+                    session.connection().rollback();
+                } catch (Exception e1) {
+                    // Error is not recoverable.
+                }
+            }
+
+            LOG.log(Level.SEVERE, "Couldn't save object.", e);
+            throw new PersistenceManagerException("Couldn't save object.", e);
+        } finally {
+            // Close session if we had opened it
+            if (!isForeignSession) {
+                closeSession();
+            }
+        }
+    }
+
+    /**
+     * Updates object in storage.
+     *
+     * @param object object to update.
+     * @throws PersistenceManagerException in case of any problems during updating.
+     */
+    public static void updateObject(final Object object)
+            throws PersistenceManagerException {
+
+        updateObject(object, null);
+    }
+
+    /**
+     * Updates object in storage.
+     *
+     * @param object  object to update.
+     * @param session session to use. If NULL then new session is opened.
+     * @throws PersistenceManagerException in case of any problems during updating.
+     */
+    public static void updateObject(final Object object, Session session)
+            throws PersistenceManagerException {
+
+        boolean isForeignSession = session != null;
+
+        try {
+            // Open new session if we are not in the foreign one
+            if (!isForeignSession) {
+                session = openSession();
+            }
+
+            session.update(object);
+
+            // Flush only if it's our own session
+            if (!isForeignSession) {
+                session.flush();
+                session.connection().commit();
+            }
+        } catch (Exception e) {
+            // Rollback transaction if we are owners of session
+            if (!isForeignSession) {
+                try {
+                    session.connection().rollback();
+                } catch (Exception e1) {
+                    // Error is not recoverable.
+                }
+            }
+
+            LOG.log(Level.SEVERE, "Couldn't update object.", e);
+            throw new PersistenceManagerException("Couldn't update object.", e);
+        } finally {
+            // Close session if we had opened it
+            if (!isForeignSession) {
+                closeSession();
+            }
+        }
+    }
+
+    /**
+     * Deletes object from database using existing session.
+     *
+     * @param object  object to delete.
+     * @param session session to use. If NULL then new session is opened.
+     * @throws PersistenceManagerException in case of any problems during deletion.
+     */
+    public static void deleteObject(final Object object, Session session)
+            throws PersistenceManagerException {
+
+        boolean isForeignSession = session != null;
+
+        try {
+            // Open new session if we are not in the foreign one
+            if (!isForeignSession) {
+                session = openSession();
+            }
+
+            session.delete(object);
+
+            // Flush only if it's our own session
+            if (!isForeignSession) {
+                session.flush();
+                session.connection().commit();
+            }
+        } catch (Exception e) {
+            // Rollback transaction if we are owners of session
+            if (!isForeignSession) {
+                try {
+                    session.connection().rollback();
+                } catch (Exception e1) {
+                    // Error is not recoverable.
+                }
+            }
+            LOG.log(Level.SEVERE, "Couldn't delete object.", e);
+            throw new PersistenceManagerException("Couldn't delete object.", e);
+        } finally {
+            // Close session if we had opened it
+            if (!isForeignSession) {
+                closeSession();
+            }
+        }
+    }
 }

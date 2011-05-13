@@ -52,7 +52,7 @@ import de.nava.informa.utils.NoOpEntityResolver;
  * OPML (Outline processor markup language) parser for to read in a collection
  * of news channels (feeds) that will be made available as news channel object
  * model.</p>
- *
+ * <p/>
  * Currently OPML version 1.1 is supported.
  *
  * @author Niko Schmuck
@@ -60,84 +60,82 @@ import de.nava.informa.utils.NoOpEntityResolver;
  */
 public class OPMLParser {
 
-  private static Log logger = LogFactory.getLog(OPMLParser.class);
+    private static final Log LOG = LogFactory.getLog(OPMLParser.class);
 
-  private OPMLParser() {
-  }
-
-  public static Collection parse(URL aURL) throws IOException, ParseException {
-    return parse(new InputSource(aURL.toExternalForm()), aURL);
-  }
-  
-  /**
-   * Reads in a news feed definition from the specified URL.
-   * @return A collection of <code>FeedIF</code> objects.
-   */
-  public static Collection parse(String url) throws IOException, ParseException {
-    URL aURL = null;
-    try {
-      aURL = new URL(url);
-    } catch (java.net.MalformedURLException e) {
-      logger.warn("Could not create URL for " + url);
-    }
-    return parse(new InputSource(url), aURL);
-  }
-  
-  public static Collection parse(Reader reader) throws IOException, ParseException {
-    return parse(new InputSource(reader), null);
-  }
-  
-  public static Collection parse(InputStream stream) throws IOException, ParseException {
-    return parse(new InputSource(stream), null);
-  }
-    
-  public static Collection<FeedIF> parse(File aFile) throws IOException, ParseException {
-    URL aURL = null;
-    try {
-      aURL = aFile.toURL();
-    } catch (java.net.MalformedURLException e) {
-      throw new IOException("File " + aFile + " had invalid URL " +
-                            "representation.");
-    }
-    return parse(new InputSource(aURL.toExternalForm()), aURL);
-  }
-
-  public static Collection<FeedIF> parse(InputSource inpSource,
-                                URL baseLocation) throws IOException, ParseException {
-    // document reading without validation
-    SAXBuilder saxBuilder = new SAXBuilder(false);
-    // turn off DTD loading
-    saxBuilder.setEntityResolver(new NoOpEntityResolver());
-    try {
-      Document doc = saxBuilder.build(inpSource);
-      return parse(doc);
-    } catch (JDOMException e) {
-      throw new ParseException(e);
-    }
-  }
-
-  // ------------------------------------------------------------
-  // internal helper methods
-  // ------------------------------------------------------------
-
-  private static synchronized Collection<FeedIF> parse(Document doc) throws ParseException {
-    
-    logger.debug("start parsing.");
-    // Get the root element (must be opml)
-    Element root = doc.getRootElement();
-    String rootElement = root.getName().toLowerCase();
-    // Decide which parser to use
-    if (rootElement.startsWith("opml")) {
-      String opmlVersion = root.getAttribute("version").getValue();
-      if (opmlVersion.indexOf("1.1") >= 0) {
-        logger.info("Collection uses OPML root element (Version 1.1).");
-        return OPML_1_1_Parser.parse(root);
-      }
+    private OPMLParser() {
     }
 
-    // did not match anything
-    throw new UnsupportedFormatException("Unsupported OPML root element [" +
-                                         rootElement + "].");
-  }
+    public static Collection parse(URL aURL) throws IOException, ParseException {
+        return parse(new InputSource(aURL.toExternalForm()), aURL);
+    }
 
+    /**
+     * Reads in a news feed definition from the specified URL.
+     *
+     * @return A collection of <code>FeedIF</code> objects.
+     */
+    public static Collection parse(String url) throws IOException, ParseException {
+        final URL aURL;
+        try {
+            aURL = new URL(url);
+        } catch (java.net.MalformedURLException e) {
+            throw new IOException("Invalid url '" + url + "' had invalid URL representation.");
+        }
+        return parse(new InputSource(url), aURL);
+    }
+
+    public static Collection parse(Reader reader) throws IOException, ParseException {
+        return parse(new InputSource(reader), null);
+    }
+
+    public static Collection parse(InputStream stream) throws IOException, ParseException {
+        return parse(new InputSource(stream), null);
+    }
+
+    public static Collection<FeedIF> parse(File aFile) throws IOException, ParseException {
+        final URL aURL;
+        try {
+            aURL = aFile.toURI().toURL();
+        } catch (java.net.MalformedURLException e) {
+            throw new IOException("File " + aFile + " had invalid URL representation.");
+        }
+        return parse(new InputSource(aURL.toExternalForm()), aURL);
+    }
+
+    public static Collection<FeedIF> parse(InputSource inpSource, URL baseLocation) throws IOException, ParseException {
+        // document reading without validation
+        SAXBuilder saxBuilder = new SAXBuilder(false);
+        // turn off DTD loading
+        saxBuilder.setEntityResolver(new NoOpEntityResolver());
+        try {
+            Document doc = saxBuilder.build(inpSource);
+            return parse(doc);
+        } catch (JDOMException e) {
+            throw new ParseException(e);
+        }
+    }
+
+    // ------------------------------------------------------------
+    // internal helper methods
+    // ------------------------------------------------------------
+
+    private static synchronized Collection<FeedIF> parse(Document doc) throws ParseException {
+
+        LOG.debug("start parsing.");
+        // Get the root element (must be opml)
+        Element root = doc.getRootElement();
+        String rootElement = root.getName().toLowerCase();
+        // Decide which parser to use
+        if (rootElement.startsWith("opml")) {
+            String opmlVersion = root.getAttribute("version").getValue();
+            if (opmlVersion.indexOf("1.1") >= 0) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Collection uses OPML root element (Version 1.1).");
+                }
+                return OPML_1_1_Parser.parse(root);
+            }
+        }
+        // did not match anything
+        throw new UnsupportedFormatException("Unsupported OPML root element [" + rootElement + "].");
+    }
 }

@@ -173,27 +173,4 @@ class Base64Decoder extends FilterInputStream {
       return null;
     }
   }
-
-  /*
-  public static void main(String[] args) throws Exception {
-    if (args.length != 1) {
-      System.err.println("Usage: java Base64Decoder fileToDecode");
-    }
-
-    Base64Decoder decoder = null;
-    try {
-      decoder = new Base64Decoder(
-                new BufferedInputStream(
-                new FileInputStream(args[0])));
-      byte[] buf = new byte[4 * 1024];  // 4K buffer
-      int bytesRead;
-      while ((bytesRead = decoder.read(buf)) != -1) {
-        System.out.write(buf, 0, bytesRead);
-      }
-    }
-    finally {
-      if (decoder != null) decoder.close();
-    }
-  }
-  */
 }

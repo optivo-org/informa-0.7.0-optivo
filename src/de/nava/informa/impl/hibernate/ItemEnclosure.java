@@ -35,100 +35,98 @@ import de.nava.informa.core.ItemEnclosureIF;
 
 /**
  * Hibernate implementation of the ItemSourceIF interface.
- * 
+ *
  * @author Michael Harhen
  */
 public class ItemEnclosure implements ItemEnclosureIF {
 
-  private static final long serialVersionUID = -6885166876258838843L;
+    private static final long serialVersionUID = -6885166876258838843L;
 
-  private long id = -1;
-  private ItemIF item;
-  private URL location;
-  private int length;
-  private String type;
+    private long id = -1;
+    private ItemIF item;
+    private URL location;
+    private int length;
+    private String type;
 
-  public ItemEnclosure() {
-    this(null);
-  }
-
-  public ItemEnclosure(ItemIF item) {
-    this(item, null, null, -1);
-  }
-
-  public ItemEnclosure(ItemIF item, URL location, String type, int length) {
-    this.item = item;
-    this.location = location;
-    this.type = type;
-    this.length = length;
-  }
-
-  public long getId() {
-    return id;
-  }
-
-  public void setId(long id) {
-    this.id = id;
-  }
-
-  // --------------------------------------------------------------
-  // implementation of ItemEnclosureIF interface
-  // --------------------------------------------------------------
-
-  public ItemIF getItem() {
-    return item;
-  }
-
-  public void setItem(ItemIF item) {
-    this.item = item;
-  }
-
-  public String getLocationString() {
-    return (location == null) ? null : location.toString();
-  }
-
-  public void setLocationString(String loc) {
-    if (loc == null || loc.trim().length() == 0) {
-      location = null;
-      return;
-    } else {
-      try {
-        this.location = new URL(loc);
-      } catch (MalformedURLException e) {
-        e.printStackTrace();
-        this.location = null;
-      }
+    public ItemEnclosure() {
+        this(null);
     }
-  }
 
-  /**
-   * @return the location
-   */
-  public URL getLocation() {
-    return location;
-  }
+    public ItemEnclosure(ItemIF item) {
+        this(item, null, null, -1);
+    }
 
-  /**
-   * @param location the location to set
-   */
-  public void setLocation(URL location) {
-    this.location = location;
-  }
+    public ItemEnclosure(ItemIF item, URL location, String type, int length) {
+        this.item = item;
+        this.location = location;
+        this.type = type;
+        this.length = length;
+    }
 
-  public String getType() {
-    return type;
-  }
+    public long getId() {
+        return id;
+    }
 
-  public void setType(String type) {
-    this.type = type;
-  }
+    public void setId(long id) {
+        this.id = id;
+    }
 
-  public int getLength() {
-    return length;
-  }
+    // --------------------------------------------------------------
+    // implementation of ItemEnclosureIF interface
+    // --------------------------------------------------------------
 
-  public void setLength(int length) {
-    this.length = length;
-  }
+    public ItemIF getItem() {
+        return item;
+    }
+
+    public void setItem(ItemIF item) {
+        this.item = item;
+    }
+
+    public String getLocationString() {
+        return (location == null) ? null : location.toString();
+    }
+
+    public void setLocationString(String loc) {
+        if (loc == null || loc.trim().length() == 0) {
+            location = null;
+        } else {
+            try {
+                this.location = new URL(loc);
+            } catch (MalformedURLException e) {
+                this.location = null;
+            }
+        }
+    }
+
+    /**
+     * @return the location
+     */
+    public URL getLocation() {
+        return location;
+    }
+
+    /**
+     * @param location the location to set
+     */
+    public void setLocation(URL location) {
+        this.location = location;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
+    }
 
 }

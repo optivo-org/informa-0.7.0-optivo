@@ -46,129 +46,126 @@ import org.apache.commons.logging.LogFactory;
  */
 public class SessionHandler {
 
-  private static Log logger = LogFactory.getLog(SessionHandler.class);
+    private static Log logger = LogFactory.getLog(SessionHandler.class);
 
-  private static SessionHandler myInstance;
+    private static SessionHandler myInstance;
 
-  private Configuration cfg;
-  private SessionFactory sessFactory;
-  private Connection conn;
-  private Session curSession;
+    private SessionFactory sessFactory;
+    private Connection conn;
+    private Session curSession;
 
-  /**
-   * Constructor which configures hibernate, in this order:
-   * <ol>
-   *   <li>Reads hibernate.cfg.xml or hibernate.properties file from the
-   *       CLASSPATH to retrieve information about how the database can be
-   *       accessed (JDBC connection properties).</li>
-   *   <li>Then reads in the definiton files for all related informa hibernate
-   *       classes (*.hbm.xml)</li>
-   *   <li>Finally, if supplied, applies a Properties object to do a final
-   *       override.</li>
-   * </ol>
-   *
-   * @throws HibernateException In case a problem occurred while configuring
-   *         hibernate or creating the session factory.
-   */
-  private SessionHandler(Properties props) throws HibernateException {
-    // reads in hibernate.properties implictly for database connection settings
-    cfg = new Configuration();
+    /**
+     * Constructor which configures hibernate, in this order:
+     * <ol>
+     * <li>Reads hibernate.cfg.xml or hibernate.properties file from the
+     * CLASSPATH to retrieve information about how the database can be
+     * accessed (JDBC connection properties).</li>
+     * <li>Then reads in the definiton files for all related informa hibernate
+     * classes (*.hbm.xml)</li>
+     * <li>Finally, if supplied, applies a Properties object to do a final
+     * override.</li>
+     * </ol>
+     *
+     * @throws HibernateException In case a problem occurred while configuring
+     *                            hibernate or creating the session factory.
+     */
+    private SessionHandler(Properties props) throws HibernateException {
+        // reads in hibernate.properties implictly for database connection settings
+        Configuration cfg = new Configuration();
 
-    // attempt to use standard config file named hibernate.cfg.xml
-    try {
-      cfg.configure();
-    } catch (HibernateException he) {
-      logger.info("Can't find \"hibernate.cfg.xml\" in classpath.");
+        // attempt to use standard config file named hibernate.cfg.xml
+        try {
+            cfg.configure();
+        } catch (HibernateException he) {
+            logger.info("Can't find \"hibernate.cfg.xml\" in classpath.");
+        }
+
+        // add base classes
+        cfg.addClass(Channel.class)
+            .addClass(Item.class)
+            .addClass(ItemGuid.class)
+            .addClass(ItemEnclosure.class)
+            .addClass(ItemSource.class)
+            .addClass(Cloud.class)
+            .addClass(Category.class)
+            .addClass(ChannelGroup.class)
+            .addClass(ChannelSubscription.class)
+            .addClass(Image.class)
+            .addClass(ItemMetadata.class)
+            .addClass(TextInput.class);
+
+        // If Properties were supplied then use them as the final override
+        if (props != null)
+            cfg.addProperties(props);
+
+        // get session factory (expensive)
+        sessFactory = cfg.buildSessionFactory();
     }
 
-    // add base classes
-    cfg
-      .addClass(Channel.class)
-      .addClass(Item.class)
-      .addClass(ItemGuid.class)
-      .addClass(ItemEnclosure.class)
-      .addClass(ItemSource.class)
-      .addClass(Cloud.class)
-      .addClass(Category.class)
-      .addClass(ChannelGroup.class)
-      .addClass(ChannelSubscription.class)
-      .addClass(Image.class)
-      .addClass(ItemMetadata.class)
-      .addClass(TextInput.class);
+    /**
+     * Returns the one and only instance which can be used to obtain a
+     * {@link Session} for further operation with the hibernate objects.
+     *
+     * @throws HibernateException In case a problem occurred while configuring
+     *                            hibernate or creating the session factory.
+     */
+    public static synchronized SessionHandler getInstance(Properties props)
+            throws HibernateException {
 
-    // If Properties were supplied then use them as the final override
-    if (props != null)
-      cfg.addProperties(props);
+        if (myInstance == null) myInstance = new SessionHandler(props);
+        return myInstance;
+    }
 
-    // get session factory (expensive)
-    sessFactory = cfg.buildSessionFactory();
-  }
+    /**
+     * Returns the singelton instance, calling
+     * {@link #getInstance(Properties)} with properties set to null.
+     */
+    public static SessionHandler getInstance() throws HibernateException {
+        return getInstance(null);
+    }
 
-  /**
-   * Returns the one and only instance which can be used to obtain a
-   * {@link Session} for further operation with the hibernate objects.
-   *
-   * @throws HibernateException In case a problem occurred while configuring
-   *         hibernate or creating the session factory.
-   */
-  public static synchronized SessionHandler getInstance(Properties props)
-    throws HibernateException {
+    /**
+     * Gets hibernate session object, if JDBC <code>Connection</code> was
+     * set earlier this will be used for the opening a hibernate session.
+     */
+    public Session getSession() throws HibernateException {
+        if (conn != null)
+            curSession = sessFactory.openSession(conn);
+        else
+            curSession = sessFactory.openSession();
+        return curSession;
+    }
 
-    if (myInstance == null) myInstance = new SessionHandler(props);
-    return myInstance;
-  }
+    /**
+     * Gets a a new session whilst using an existing JDBC connection.
+     *
+     * @param conn JDBC connection
+     */
+    public Session getSession(Connection conn) {
+        this.conn = conn;
+        curSession = sessFactory.openSession(conn);
+        return curSession;
+    }
 
-  /**
-   * Returns the singelton instance, calling
-   * {@link #getInstance(Properties)} with properties set to null.
-   */
-  public static SessionHandler getInstance() throws HibernateException {
-    return getInstance(null);
-  }
+    /**
+     * Gets the default JDBC Connection object.
+     */
+    public Connection getConnection() {
+        return conn;
+    }
 
-  /**
-   * Gets hibernate session object, if JDBC <code>Connection</code> was
-   * set earlier this will be used for the opening a hibernate session.
-   */
-  public Session getSession() throws HibernateException {
-    if (conn != null)
-      curSession = sessFactory.openSession(conn);
-    else
-      curSession = sessFactory.openSession();
-    return curSession;
-  }
+    /**
+     * Sets the default JDBC Connection object.
+     */
+    public void setConnection(Connection connection) {
+        conn = connection;
+    }
 
-  /**
-   * Gets a a new session whilst using an existing JDBC connection.
-   *
-   * @param conn JDBC connection
-   */
-  public Session getSession(Connection conn) {
-    this.conn = conn;
-    curSession = sessFactory.openSession(conn);
-    return curSession;
-  }
-
-  /**
-   * Gets the default JDBC Connection object.
-   */
-  public Connection getConnection() {
-    return conn;
-  }
-
-  /**
-   * Sets the default JDBC Connection object.
-   */
-  public void setConnection(Connection connection) {
-    conn = connection;
-  }
-
-  /**
-   * Returns true if session is open.
-   */
-  public boolean isSessionOpen()
-  {
-    return curSession.isOpen();
-  }
+    /**
+     * Returns true if session is open.
+     */
+    public boolean isSessionOpen() {
+        return curSession.isOpen();
+    }
 
 }

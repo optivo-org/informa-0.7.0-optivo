@@ -29,6 +29,7 @@
 package de.nava.informa.utils;
 
 import java.io.StringReader;
+
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.apache.commons.logging.Log;
@@ -42,14 +43,12 @@ import org.apache.commons.logging.LogFactory;
  */
 public class NoOpEntityResolver implements EntityResolver {
 
-  private static Log logger = LogFactory.getLog(NoOpEntityResolver.class);
-  
-  public InputSource resolveEntity(String publicId, String systemId) {
-    if (logger.isDebugEnabled()) {
-      logger.debug("publicId: " + publicId +
-                   ", systemId: " + systemId);
-    }
-    return new InputSource(new StringReader(""));
-  }
+    private static final Log LOG = LogFactory.getLog(NoOpEntityResolver.class);
 
+    public InputSource resolveEntity(String publicId, String systemId) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("publicId: " + publicId + ", systemId: " + systemId);
+        }
+        return new InputSource(new StringReader(""));
+    }
 }

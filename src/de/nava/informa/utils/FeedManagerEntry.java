@@ -54,288 +54,282 @@ import org.apache.commons.logging.LogFactory;
  * Its also important to note that we do oversimply things a bit. We ignore the
  * updateBase even if specified by the feed.
  * </p>
- * 
+ *
  * @author Sam Newman
  * @see FeedManager
  */
 public class FeedManagerEntry {
 
-  public static final long MILLISECONDS_IN_HOUR = 3600000L;
+    public static final long MILLISECONDS_IN_HOUR = 3600000L;
 
-  public static final long MILLISECONDS_IN_DAY = 86400000L;
+    public static final long MILLISECONDS_IN_DAY = 86400000L;
 
-  public static final long MILLISECONDS_IN_MONTH = 2419200000L;
+    public static final long MILLISECONDS_IN_MONTH = 2419200000L;
 
-  /** Over simplificatin here - assuming a non-leap year */
-  public static final long MILLISECONDS_IN_YEAR = 31536000000L;
+    /**
+     * Over simplificatin here - assuming a non-leap year
+     */
+    public static final long MILLISECONDS_IN_YEAR = 31536000000L;
 
-  /* logger handler */
-  private static Log logger = LogFactory.getLog(FeedManagerEntry.class);
+    private static final Log LOG = LogFactory.getLog(FeedManagerEntry.class);
 
-  private ChannelUpdatePeriod defaultUpdatePeriod;
+    private ChannelUpdatePeriod defaultUpdatePeriod;
 
-  private int defaultUpdateFrequency;
+    private int defaultUpdateFrequency;
 
-  /**
-   * Stores the number of milliseconds since the last update after which the
-   * feed is out of date
-   */
-  private long timeToExpire;
+    /**
+     * Stores the number of milliseconds since the last update after which the
+     * feed is out of date
+     */
+    private long timeToExpire;
 
-  /** The channel we hold */
-  private FeedIF feed;
+    /**
+     * The channel we hold
+     */
+    private FeedIF feed;
 
-  /** The last time we updated a feed */
-  private long lastUpdate;
+    /**
+     * The last time we updated a feed
+     */
+    private long lastUpdate;
 
-  /** The URI for the feed */
-  private String feedUri;
+    /**
+     * The URI for the feed
+     */
+    private String feedUri;
 
-  private ChannelBuilderIF channelBuilder;
+    private ChannelBuilderIF channelBuilder;
 
-  /** the wantedTtl for the feed * */
-  private long wantedTtl = -1;
+    /**
+     * the wantedTtl for the feed *
+     */
+    private long wantedTtl = -1;
 
-  /** stores the values necessary to make conditionnale GET * */
-  private ConditionalGetValues httpHeaders = new ConditionalGetValues();
+    /**
+     * stores the values necessary to make conditionnale GET *
+     */
+    private ConditionalGetValues httpHeaders = new ConditionalGetValues();
 
-	/**
-   * Creates a new FeedManagerEntry object.
-   * 
-   * @param feedUri
-   * @param builder
-   * @param defaultUpdatePeriod2
-   * @param defaultUpdateFrequency
-   * @throws FeedManagerException
-   */
-  public FeedManagerEntry(String feedUri, ChannelBuilderIF builder,
-      ChannelUpdatePeriod defaultUpdatePeriod2, int defaultUpdateFrequency)
-      throws FeedManagerException {
-    this.feedUri = feedUri;
-    this.channelBuilder = builder;
-    this.defaultUpdatePeriod = defaultUpdatePeriod2;
-    this.defaultUpdateFrequency = defaultUpdateFrequency;
-    this.feed = retrieveFeed(feedUri);
-    this.lastUpdate = System.currentTimeMillis();
-  }
-
-  public ChannelUpdatePeriod getDefaultUpdatePeriod() {
-    return defaultUpdatePeriod;
-  }
-
-  public void setDefaultUpdatePeriod(ChannelUpdatePeriod defaultUpdatePeriod) {
-    this.defaultUpdatePeriod = defaultUpdatePeriod;
-  }
-
-  public int getDefaultUpdateFrequency() {
-    return defaultUpdateFrequency;
-  }
-
-  public void setDefaultUpdateFrequency(int defaultUpdateFrequency) {
-    this.defaultUpdateFrequency = defaultUpdateFrequency;
-  }
-	
-  /**
-   * Loads the channel and sets up the time to expire
-   * 
-   * @param uri
-   *          The location for the rss file
-   * @return The Channel
-   * @throws FeedManagerException
-   *           If the feed specified by <code>uri</code> is invalid
-   */
-  private FeedIF retrieveFeed(String uri) throws FeedManagerException {
-    try {
-      URL urlToRetrieve = new URL(uri);
-
-      URLConnection conn = null;
-      try {
-        conn = urlToRetrieve.openConnection();
-
-        if (conn instanceof HttpURLConnection) {
-
-          HttpURLConnection httpConn = (HttpURLConnection) conn;
-
-          httpConn.setInstanceFollowRedirects(true); // not needed, default ?
-
-          //	 Hack for User-Agent : problem for
-          // http://www.diveintomark.org/xml/rss.xml
-          HttpHeaderUtils.setUserAgent(httpConn, "Informa Java API");
-
-          logger.debug("retr feed at url " + uri + ": ETag"
-              + HttpHeaderUtils.getETagValue(httpConn) + " if-modified :"
-              + HttpHeaderUtils.getLastModified(httpConn));
-
-          // get initial values for cond. GET in updateChannel
-          this.httpHeaders.setETag(HttpHeaderUtils.getETagValue(httpConn));
-          this.httpHeaders.setIfModifiedSince(HttpHeaderUtils
-              .getLastModified(httpConn));
-        }
-      } catch (java.lang.ClassCastException e) {
-        conn = null;
-        logger.warn("problem cast to HttpURLConnection " + uri, e);
-        throw new FeedManagerException(e);
-      } catch (NullPointerException e) {
-        logger.error("problem NPE " + uri + " conn=" + conn, e);
-        conn = null;
-        throw new FeedManagerException(e);
-      }
-
-      ChannelIF channel = null;
-      /*
-       * if ( conn == null ) { channel = FeedParser.parse(getChannelBuilder(),
-       * uri); } else {
-       */
-      channel = FeedParser.parse(getChannelBuilder(), conn.getInputStream());
-      //}
-
-      this.timeToExpire = getTimeToExpire(channel);
-      this.feed = new Feed(channel);
-
-      Date currDate = new Date();
-      this.feed.setLastUpdated(currDate);
-      this.feed.setDateFound(currDate);
-      this.feed.setLocation(urlToRetrieve);
-      logger.info("feed retrieved " + uri);
-
-    } catch (IOException e) {
-      logger.error("IOException " + feedUri + " e=" + e);
-      e.printStackTrace();
-      throw new FeedManagerException(e);
-    } catch (ParseException e) {
-      e.printStackTrace();
-      throw new FeedManagerException(e);
+    public FeedManagerEntry(String feedUri, ChannelBuilderIF builder,
+                            ChannelUpdatePeriod defaultUpdatePeriod2, int defaultUpdateFrequency)
+            throws FeedManagerException {
+        this.feedUri = feedUri;
+        this.channelBuilder = builder;
+        this.defaultUpdatePeriod = defaultUpdatePeriod2;
+        this.defaultUpdateFrequency = defaultUpdateFrequency;
+        this.feed = retrieveFeed(feedUri);
+        this.lastUpdate = System.currentTimeMillis();
     }
 
-    return this.feed;
-  }
+    public ChannelUpdatePeriod getDefaultUpdatePeriod() {
+        return defaultUpdatePeriod;
+    }
 
-  /**
-   * Updates the channel associated with this feed use conditional get stuff.
-   * http://fishbowl.pastiche.org/2002/10/21/http_conditional_get_for_rss_hackers
-   * 
-   * @throws FeedManagerException
-   */
-  private synchronized void updateChannel() throws FeedManagerException {
-    try {
-      String feedUrl = this.feed.getLocation().toString();
+    public void setDefaultUpdatePeriod(ChannelUpdatePeriod defaultUpdatePeriod) {
+        this.defaultUpdatePeriod = defaultUpdatePeriod;
+    }
 
-      URL aURL = null;
-      try {
-        aURL = new URL(feedUrl);
-      } catch (java.net.MalformedURLException e) {
-        logger.error("Could not create URL for " + feedUrl);
-      }
+    public int getDefaultUpdateFrequency() {
+        return defaultUpdateFrequency;
+    }
 
-      URLConnection conn = null;
-      try {
-        conn = aURL.openConnection();
+    public void setDefaultUpdateFrequency(int defaultUpdateFrequency) {
+        this.defaultUpdateFrequency = defaultUpdateFrequency;
+    }
 
-        if (conn instanceof HttpURLConnection) {
+    /**
+     * Loads the channel and sets up the time to expire
+     *
+     * @param uri The location for the rss file
+     * @return The Channel
+     * @throws FeedManagerException If the feed specified by <code>uri</code> is invalid
+     */
+    private FeedIF retrieveFeed(String uri) throws FeedManagerException {
+        try {
+            URL urlToRetrieve = new URL(uri);
 
-          HttpURLConnection httpConn = (HttpURLConnection) conn;
+            URLConnection conn = null;
+            try {
+                conn = urlToRetrieve.openConnection();
 
-          httpConn.setInstanceFollowRedirects(true);
-          //	 Hack for User-Agent : problem for
-          // http://www.diveintomark.org/xml/rss.xml
-          HttpHeaderUtils.setUserAgent(httpConn, "Informa Java API");
-          HttpHeaderUtils.setETagValue(httpConn, this.httpHeaders.getETag());
-          HttpHeaderUtils.setIfModifiedSince(httpConn, this.httpHeaders
-              .getIfModifiedSince());
-          httpConn.connect();
-          if (httpConn.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                if (conn instanceof HttpURLConnection) {
 
-            logger.info("cond. GET for feed at url " + feedUrl + ": no change");
+                    HttpURLConnection httpConn = (HttpURLConnection) conn;
+
+                    httpConn.setInstanceFollowRedirects(true); // not needed, default ?
+
+                    //	 Hack for User-Agent : problem for
+                    // http://www.diveintomark.org/xml/rss.xml
+                    HttpHeaderUtils.setUserAgent(httpConn, "Informa Java API");
+
+                    LOG.debug("retr feed at url " + uri + ": ETag"
+                            + HttpHeaderUtils.getETagValue(httpConn) + " if-modified :"
+                            + HttpHeaderUtils.getLastModified(httpConn));
+
+                    // get initial values for cond. GET in updateChannel
+                    this.httpHeaders.setETag(HttpHeaderUtils.getETagValue(httpConn));
+                    this.httpHeaders.setIfModifiedSince(HttpHeaderUtils.getLastModified(httpConn));
+                }
+            } catch (java.lang.ClassCastException e) {
+                throw new FeedManagerException("problem cast to HttpURLConnection " + uri, e);
+            } catch (NullPointerException e) {
+                throw new FeedManagerException("problem NPE " + uri + " conn=" + conn, e);
+            }
+
+            /*
+            * if ( conn == null ) { channel = FeedParser.parse(getChannelBuilder(),
+            * uri); } else {
+            */
+            final ChannelIF channel = FeedParser.parse(getChannelBuilder(), conn.getInputStream());
+            //}
+
+            this.timeToExpire = getTimeToExpire(channel);
+            this.feed = new Feed(channel);
+
+            Date currDate = new Date();
+            this.feed.setLastUpdated(currDate);
+            this.feed.setDateFound(currDate);
+            this.feed.setLocation(urlToRetrieve);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("feed retrieved " + uri);
+            }
+        } catch (IOException e) {
+            throw new FeedManagerException("IOException " + feedUri + ".", e);
+        } catch (ParseException e) {
+            throw new FeedManagerException(e);
+        }
+
+        return this.feed;
+    }
+
+    /**
+     * Updates the channel associated with this feed use conditional get stuff.
+     * http://fishbowl.pastiche.org/2002/10/21/http_conditional_get_for_rss_hackers
+     *
+     * @throws FeedManagerException
+     */
+    private synchronized void updateChannel() throws FeedManagerException {
+        try {
+            final String feedUrl = this.feed.getLocation().toString();
+            final URL aURL;
+            try {
+                aURL = new URL(feedUrl);
+            } catch (java.net.MalformedURLException e) {
+                throw new FeedManagerException("Invalid url '" + feedUrl + "'.", e);
+            }
+
+            URLConnection conn = null;
+            try {
+                conn = aURL.openConnection();
+
+                if (conn instanceof HttpURLConnection) {
+
+                    HttpURLConnection httpConn = (HttpURLConnection) conn;
+
+                    httpConn.setInstanceFollowRedirects(true);
+                    //	 Hack for User-Agent : problem for
+                    // http://www.diveintomark.org/xml/rss.xml
+                    HttpHeaderUtils.setUserAgent(httpConn, "Informa Java API");
+                    HttpHeaderUtils.setETagValue(httpConn, this.httpHeaders.getETag());
+                    HttpHeaderUtils.setIfModifiedSince(httpConn, this.httpHeaders
+                            .getIfModifiedSince());
+                    httpConn.connect();
+                    if (httpConn.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("cond. GET for feed at url " + feedUrl + ": no change");
+                        }
+                        this.feed.setLastUpdated(new Date());
+                        // TODO : add a property in FeedIF interface for lastGet ?
+                        this.lastUpdate = System.currentTimeMillis();
+                        return;
+                    }
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("cond. GET for feed at url " + feedUrl + ": changed.");
+                        LOG.debug("feed at url " + feedUrl + " new values : ETag"
+                                + HttpHeaderUtils.getETagValue(httpConn) + " if-modified :"
+                                + HttpHeaderUtils.getLastModified(httpConn));
+                    }
+                    this.httpHeaders.setETag(HttpHeaderUtils.getETagValue(httpConn));
+                    this.httpHeaders.setIfModifiedSince(HttpHeaderUtils.getLastModified(httpConn));
+                }
+
+            } catch (java.lang.ClassCastException e) {
+                LOG.warn("problem cast to HttpURLConnection (reading from a file?) " + feedUrl, e);
+            }
+
+            final ChannelIF channel;
+            if (conn == null) {
+                channel = FeedParser.parse(getChannelBuilder(), feedUrl);
+            } else {
+                channel = FeedParser.parse(getChannelBuilder(), conn.getInputStream());
+            }
+
+            this.feed.setChannel(channel);
             this.feed.setLastUpdated(new Date());
-            // TODO : add a property in FeedIF interface for lastGet ?
             this.lastUpdate = System.currentTimeMillis();
-            return;
-          }
-          logger.info("cond. GET for feed at url " + feedUrl + ": changed");
-          logger.debug("feed at url " + feedUrl + " new values : ETag"
-              + HttpHeaderUtils.getETagValue(httpConn) + " if-modified :"
-              + HttpHeaderUtils.getLastModified(httpConn));
-
-          this.httpHeaders.setETag(HttpHeaderUtils.getETagValue(httpConn));
-          this.httpHeaders.setIfModifiedSince(HttpHeaderUtils
-              .getLastModified(httpConn));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("feed updated " + feedUrl);
+            }
+        } catch (IOException e) {
+            throw new FeedManagerException(e);
+        } catch (ParseException e) {
+            throw new FeedManagerException(e);
         }
-
-      } catch (java.lang.ClassCastException e) {
-        logger.warn("problem cast to HttpURLConnection (reading from a file?) "
-            + feedUrl, e);
-      }
-
-      ChannelIF channel = null;
-      if (conn == null) {
-        channel = FeedParser.parse(getChannelBuilder(), feedUrl);
-      } else {
-        channel = FeedParser.parse(getChannelBuilder(), conn.getInputStream());
-      }
-
-      this.feed.setChannel(channel);
-      this.feed.setLastUpdated(new Date());
-      this.lastUpdate = System.currentTimeMillis();
-      logger.info("feed updated " + feedUrl);
-    } catch (IOException e) {
-      throw new FeedManagerException(e);
-    } catch (ParseException e) {
-      throw new FeedManagerException(e);
     }
-  }
 
-  /**
-   * Checks to see if the feed is out of date - if it is the feed is reloaded
-   * from the URI, otherwise the cached version is returned.
-   * 
-   * @return The up todate feed
-   * @throws FeedManagerException
-   */
-  public FeedIF getFeed() throws FeedManagerException {
-    if (isOutOfDate()) {
-      updateChannel();
+    /**
+     * Checks to see if the feed is out of date - if it is the feed is reloaded
+     * from the URI, otherwise the cached version is returned.
+     *
+     * @return The up todate feed
+     * @throws FeedManagerException
+     */
+    public FeedIF getFeed() throws FeedManagerException {
+        if (isOutOfDate()) {
+            updateChannel();
+        }
+        return this.feed;
     }
-    return this.feed;
-  }
 
-  public void setWantedTtl(long ms) {
-    this.wantedTtl = ms;
-    //recalculate the timeToExpire
-    this.timeToExpire = this.getTimeToExpire(this.feed.getChannel());
-  }
-
-  /**
-   * Based on the update period and update frequceny and on the optional
-   * wantedTtl for the feed, calculate how many milliseconds after the
-   * <code>lastUpdate</code> before this feed is considered out of date
-   * 
-   * @param channel
-   * @return The number of milliseconds before we can consider the feed invalid
-   * @throws IllegalArgumentException
-   */
-  private long getTimeToExpire(ChannelIF channel) {
-    long temp = (new CacheSettings()).getTtl(channel, this.wantedTtl);
-    return temp;
-  }
-
-  /**
-   * Determines if the feed is out of date.
-   * 
-   * @return false if the feed is up to date, else true
-   */
-  private boolean isOutOfDate() {
-    boolean outOfDate = false;
-    logger.info(this + " isOutOfDate " + this.feedUri + "lupdt: " + lastUpdate
-        + ",tte=" + timeToExpire + "<?"
-        + (System.currentTimeMillis() - lastUpdate));
-    if ((lastUpdate + timeToExpire) < System.currentTimeMillis()) {
-      outOfDate = true;
+    public void setWantedTtl(long ms) {
+        this.wantedTtl = ms;
+        //recalculate the timeToExpire
+        this.timeToExpire = this.getTimeToExpire(this.feed.getChannel());
     }
-    return outOfDate;
-  }
 
-  private ChannelBuilderIF getChannelBuilder() {
-    return channelBuilder;
-  }
+    /**
+     * Based on the update period and update frequceny and on the optional
+     * wantedTtl for the feed, calculate how many milliseconds after the
+     * <code>lastUpdate</code> before this feed is considered out of date
+     *
+     * @param channel
+     * @return The number of milliseconds before we can consider the feed invalid
+     * @throws IllegalArgumentException
+     */
+    private long getTimeToExpire(ChannelIF channel) {
+        return (new CacheSettings()).getTtl(channel, this.wantedTtl);
+    }
+
+    /**
+     * Determines if the feed is out of date.
+     *
+     * @return false if the feed is up to date, else true
+     */
+    private boolean isOutOfDate() {
+        boolean outOfDate = false;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(this + " isOutOfDate " + this.feedUri + "lupdt: " + lastUpdate
+                    + ",tte=" + timeToExpire + "<?"
+                    + (System.currentTimeMillis() - lastUpdate));
+        }
+        if ((lastUpdate + timeToExpire) < System.currentTimeMillis()) {
+            outOfDate = true;
+        }
+        return outOfDate;
+    }
+
+    private ChannelBuilderIF getChannelBuilder() {
+        return channelBuilder;
+    }
 
 }

@@ -28,18 +28,16 @@
 
 package de.nava.informa.search;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-
+import de.nava.informa.core.ChannelIF;
+import de.nava.informa.core.ItemIF;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 
-import de.nava.informa.core.ChannelIF;
-import de.nava.informa.core.ItemIF;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Utility class which allows to generate respective maintain a
@@ -49,95 +47,96 @@ import de.nava.informa.core.ItemIF;
  */
 public final class ChannelIndexer {
 
-  private static Log logger = LogFactory.getLog(ChannelIndexer.class);
+    private static final Log LOG = LogFactory.getLog(ChannelIndexer.class);
 
-  private String indexDir;
-  private int nrOfIndexedItems;
-  private Analyzer analyzer;
-  
-  /**
-   * Constructor which allows to specify the index directory.
-   * For the full-text indexing process the lucene
-   * {@link org.apache.lucene.analysis.standard.StandardAnalyzer}
-   * is used.
-   *
-   * @param indexDir - The directory in which the index files are stored.
-   */
-  public ChannelIndexer(String indexDir) {
-    this.indexDir = indexDir;
-    this.nrOfIndexedItems = 0;
-    this.analyzer = new StandardAnalyzer();
-  }
-  
-  /**
-   * Index all news items contained in the given channels.
-   *
-   * @param createNewIndex - wether a new index should be generated or
-   *        an existant one should be taken into account
-   * @param channels - a collection of ChannelIF objects
-   */
-  public void indexChannels(boolean createNewIndex, Collection channels)
-    throws java.io.IOException {
+    private String indexDir;
+    private int nrOfIndexedItems;
+    private Analyzer analyzer;
 
-    Collection<ItemIF> items = new ArrayList<ItemIF>();
-    Iterator itC = channels.iterator();
-    while (itC.hasNext()) {
-      ChannelIF channel = (ChannelIF) itC.next();
-      if (logger.isDebugEnabled()) {
-        logger.debug("Searching channel " + channel + " for items.");
-      }
-      items.addAll(channel.getItems());
+    /**
+     * Constructor which allows to specify the index directory.
+     * For the full-text indexing process the lucene
+     * {@link org.apache.lucene.analysis.standard.StandardAnalyzer}
+     * is used.
+     *
+     * @param indexDir - The directory in which the index files are stored.
+     */
+    public ChannelIndexer(String indexDir) {
+        this.indexDir = indexDir;
+        this.nrOfIndexedItems = 0;
+        this.analyzer = new StandardAnalyzer();
     }
-    if (!items.isEmpty()) {
-      indexItems(createNewIndex, items);
-    } else {
-      logger.info("No items found for indexing.");
+
+    /**
+     * Index all news items contained in the given channels.
+     *
+     * @param createNewIndex - wether a new index should be generated or
+     *                       an existant one should be taken into account
+     * @param channels       - a collection of ChannelIF objects
+     */
+    public void indexChannels(boolean createNewIndex, Collection channels) throws java.io.IOException {
+
+        Collection<ItemIF> items = new ArrayList<ItemIF>();
+        for (Object channel1 : channels) {
+            ChannelIF channel = (ChannelIF) channel1;
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Searching channel " + channel + " for items.");
+            }
+            items.addAll(channel.getItems());
+        }
+        if (!items.isEmpty()) {
+            indexItems(createNewIndex, items);
+        } else if (LOG.isDebugEnabled()) {
+            LOG.debug("No items found for indexing.");
+        }
     }
-  }
 
-  /**
-   * Index all given news items.
-   *
-   * @param createNewIndex - Wether a new index should be generated or
-   *        an existant one should be taken into account.
-   * @param items - A collection of ItemIF objects.
-   */
-  public void indexItems(boolean createNewIndex, Collection<ItemIF> items)
-    throws java.io.IOException {
-    
-    logger.info("Start writing index.");
-    IndexWriter writer = new IndexWriter(indexDir, analyzer, createNewIndex);
-    Iterator<ItemIF> itI = items.iterator();
-    while (itI.hasNext()) {
-      ItemIF item = itI.next();
-      if (logger.isDebugEnabled()) {
-        logger.debug("Add item " + item + " to index.");
-      }
-      writer.addDocument(ItemDocument.makeDocument(item));
+    /**
+     * Index all given news items.
+     *
+     * @param createNewIndex - Wether a new index should be generated or
+     *                       an existant one should be taken into account.
+     * @param items          - A collection of ItemIF objects.
+     */
+    public void indexItems(boolean createNewIndex, Collection<ItemIF> items) throws java.io.IOException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Start writing index.");
+        }
+        IndexWriter writer = new IndexWriter(indexDir, analyzer, createNewIndex);
+        try {
+            for (ItemIF item1 : items) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Add item " + item1 + " to index.");
+                }
+                writer.addDocument(ItemDocument.makeDocument(item1));
+            }
+            writer.optimize();
+            nrOfIndexedItems = writer.docCount();
+        } finally {
+            writer.close();
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.info("Finished writing index.");
+        }
     }
-    writer.optimize();
-    nrOfIndexedItems = writer.docCount();
-    writer.close();
-    logger.info("Finished writing index.");
-  }
 
-  /**
-   * Returns the number of documents that were in the index last time
-   * the index operation was performed.
-   *
-   * Note: Use only directly after the indexing process, otherwise the
-   * return value may be wrong.
-   */
-  public int getNrOfIndexedItems() {
-    return nrOfIndexedItems;
-  }
+    /**
+     * Returns the number of documents that were in the index last time
+     * the index operation was performed.
+     * <p/>
+     * Note: Use only directly after the indexing process, otherwise the
+     * return value may be wrong.
+     */
+    public int getNrOfIndexedItems() {
+        return nrOfIndexedItems;
+    }
 
-  public void setIndexDir(String indexDir) {
-    this.indexDir = indexDir;
-  }
+    public void setIndexDir(String indexDir) {
+        this.indexDir = indexDir;
+    }
 
-  public String getIndexDir() {
-    return indexDir;
-  }
-  
+    public String getIndexDir() {
+        return indexDir;
+    }
+
 }

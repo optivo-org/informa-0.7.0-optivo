@@ -1,6 +1,13 @@
 Informa change log:
 
 ------------------------------------------------------------------------------
+Version 0.7.0-optivo
+
+ o Removed all System.out.println(...) and Exception.printStacktrace() calls
+ 
+ o Changed all logger.info(...) calls to LOG.debug(...) calls
+
+------------------------------------------------------------------------------
 Version 0.7.0-alpha1
 
  o Minor code beautifications (JavaDoc)

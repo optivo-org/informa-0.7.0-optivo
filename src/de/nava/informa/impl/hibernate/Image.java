@@ -40,148 +40,142 @@ import de.nava.informa.core.ImageIF;
  */
 public class Image implements ImageIF {
 
-  private static final long serialVersionUID = 8134982328827904229L;
-	
-  private long id = -1;
-  private String title;
-  private String description;
-  private URL location;
-  private URL link;
-  private int width;
-  private int height;
+    private static final long serialVersionUID = 8134982328827904229L;
 
-  public Image() {
-    this("Unnamed image", null, null);
-  }
+    private long id = -1;
+    private String title;
+    private String description;
+    private URL location;
+    private URL link;
+    private int width;
+    private int height;
 
-  public Image(String title, URL location, URL link) {
-    this.title = title;
-    this.location = location;
-    this.link = link;
-  }
-
-  public long getId() {
-    return id;
-  }
-
-  public void setId(long id) {
-    this.id = id;
-  }
-
-  // --------------------------------------------------------------
-  // implementation of ImageIF interface
-  // --------------------------------------------------------------
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getLocationString() {
-    return (location == null) ? null : location.toString();
-  }
-
-  public void setLocationString(String loc) {
-    if (loc == null || loc.trim().length() == 0) {
-      location = null;
-      return;
-    } else {
-      try {
-        this.location = new URL(loc);
-      } catch (MalformedURLException e) {
-        e.printStackTrace();
-      }
+    public Image() {
+        this("Unnamed image", null, null);
     }
-  }
 
-  /**
-   * @return the location
-   */
-  public URL getLocation() {
-    return location;
-  }
+    public Image(String title, URL location, URL link) {
+        this.title = title;
+        this.location = location;
+        this.link = link;
+    }
 
-  /**
-   * @param location the location to set
-   */
-  public void setLocation(URL location) {
-    this.location = location;
-  }
+    public long getId() {
+        return id;
+    }
 
-  public int getWidth() {
-    return width;
-  }
+    public void setId(long id) {
+        this.id = id;
+    }
 
-  public void setWidth(int width) {
-    this.width = width;
-  }
+    // --------------------------------------------------------------
+    // implementation of ImageIF interface
+    // --------------------------------------------------------------
 
-  public int getHeight() {
-    return height;
-  }
+    public String getTitle() {
+        return title;
+    }
 
-  public void setHeight(int height) {
-    this.height = height;
-  }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-   /**
-    * Images are equal when their locations are equal.
-    */
-   public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ImageIF)) return false;
+    public String getDescription() {
+        return description;
+    }
 
-      final ImageIF image = (ImageIF) o;
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-      if (location != null ? !location.equals(image.getLocation()) : image.getLocation() != null) return false;
+    public String getLocationString() {
+        return (location == null) ? null : location.toString();
+    }
 
-      return true;
-   }
+    public void setLocationString(String loc) {
+        if (loc == null || loc.trim().length() == 0) {
+            location = null;
+        } else {
+            try {
+                this.location = new URL(loc);
+            } catch (MalformedURLException ignored) {
+            }
+        }
+    }
 
-   public int hashCode() {
-      return (location != null ? location.hashCode() : 0);
-   }
+    /**
+     * @return the location
+     */
+    public URL getLocation() {
+        return location;
+    }
 
-   public String getLinkString() {
-     return (link == null) ? null : link.toString();
-   }
+    /**
+     * @param location the location to set
+     */
+    public void setLocation(URL location) {
+        this.location = location;
+    }
 
-   public void setLinkString(String loc) {
-     if (loc == null || loc.trim().length() == 0) {
-       link = null;
-       return;
-     } else {
-       try {
-         this.link = new URL(loc);
-       } catch (MalformedURLException e) {
-         e.printStackTrace();
-       }
-     }
-   }
-   
-  /**
-   * @return the link
-   */
-  public URL getLink() {
-    return link;
-  }
+    public int getWidth() {
+        return width;
+    }
 
-  /**
-   * @param link the link to set
-   */
-  public void setLink(URL link) {
-    this.link = link;
-  }
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    /**
+     * Images are equal when their locations are equal.
+     */
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ImageIF)) return false;
+
+        final ImageIF image = (ImageIF) o;
+
+        return !(location != null ? !location.equals(image.getLocation()) : image.getLocation() != null);
+
+    }
+
+    public int hashCode() {
+        return (location != null ? location.hashCode() : 0);
+    }
+
+    public String getLinkString() {
+        return (link == null) ? null : link.toString();
+    }
+
+    public void setLinkString(String loc) {
+        if (loc == null || loc.trim().length() == 0) {
+            link = null;
+        } else {
+            try {
+                this.link = new URL(loc);
+            } catch (MalformedURLException ignored) {}
+        }
+    }
+
+    /**
+     * @return the link
+     */
+    public URL getLink() {
+        return link;
+    }
+
+    /**
+     * @param link the link to set
+     */
+    public void setLink(URL link) {
+        this.link = link;
+    }
 
 }

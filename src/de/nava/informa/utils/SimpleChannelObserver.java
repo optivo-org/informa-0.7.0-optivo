@@ -43,29 +43,29 @@ import de.nava.informa.core.ChannelObserverIF;
  */
 public class SimpleChannelObserver implements ChannelObserverIF {
 
-  private static Log logger = LogFactory.getLog(SimpleChannelObserver.class);
+    private static final Log LOG = LogFactory.getLog(SimpleChannelObserver.class);
 
-  private ItemIF myAddedItem;
+    private ItemIF myAddedItem;
 
-  public SimpleChannelObserver() {
-    super();
-  }
-  
-  public ItemIF getMyAddedItem() {
-    return myAddedItem;
-  }
+    public SimpleChannelObserver() {
+        super();
+    }
 
-  // ------------------------------------------------------------
-  // Implementation of ChannelObserverIF
-  // ------------------------------------------------------------
-  
-  public void itemAdded(ItemIF newItem) {
-    myAddedItem = newItem;
-    logger.info("A new item was added: " + newItem);
-  }
+    public ItemIF getMyAddedItem() {
+        return myAddedItem;
+    }
 
-  public void channelRetrieved(ChannelIF channel) {
-    logger.info("Channel " + channel + " updated.");
-  }
-  
+    // ------------------------------------------------------------
+    // Implementation of ChannelObserverIF
+    // ------------------------------------------------------------
+
+    public void itemAdded(ItemIF newItem) {
+        myAddedItem = newItem;
+        LOG.debug("A new item was added: " + newItem);
+    }
+
+    public void channelRetrieved(ChannelIF channel) {
+        LOG.debug("Channel " + channel + " updated.");
+    }
+
 }

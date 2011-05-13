@@ -30,6 +30,7 @@ package de.nava.informa.impl.hibernate;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+
 import de.nava.informa.core.TextInputIF;
 
 /**
@@ -39,85 +40,83 @@ import de.nava.informa.core.TextInputIF;
  */
 public class TextInput implements TextInputIF {
 
-  private static final long serialVersionUID = -6371730164672647148L;
-	
-  private long id = -1;
-  private String title;
-  private String description;
-  private String name;
-  private URL link;
+    private static final long serialVersionUID = -6371730164672647148L;
 
-  public TextInput() {
-    this("[Unknown TextInput]", null, null, null);
-  }
+    private long id = -1;
+    private String title;
+    private String description;
+    private String name;
+    private URL link;
 
-  public TextInput(String title, String description, String name, URL link) {
-    this.title = title;
-    this.description = description;
-    this.name =  name;
-    this.link = link;
-  }
-
-  public long getId() {
-    return id;
-  }
-
-  public void setId(long id) {
-    this.id = id;
-  }
-
-  // --------------------------------------------------------------
-  // implementation of TextInputIF interface
-  // --------------------------------------------------------------
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getLinkString() {
-    return (link == null) ? null : link.toString();
-  }
-
-  public void setLinkString(String loc) {
-    if (loc == null || loc.trim().length() == 0) {
-      link = null;
-      return;
-    } else {
-      try {
-        this.link = new URL(loc);
-      } catch (MalformedURLException e) {
-        e.printStackTrace();
-        this.link = null;
-      }
+    public TextInput() {
+        this("[Unknown TextInput]", null, null, null);
     }
-  }
 
-  public URL getLink() {
-    return link;
-  }
+    public TextInput(String title, String description, String name, URL link) {
+        this.title = title;
+        this.description = description;
+        this.name = name;
+        this.link = link;
+    }
 
-  public void setLink(URL link) {
-    this.link = link;
-  }
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    // --------------------------------------------------------------
+    // implementation of TextInputIF interface
+    // --------------------------------------------------------------
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getLinkString() {
+        return (link == null) ? null : link.toString();
+    }
+
+    public void setLinkString(String loc) {
+        if (loc == null || loc.trim().length() == 0) {
+            link = null;
+        } else {
+            try {
+                this.link = new URL(loc);
+            } catch (MalformedURLException e) {
+                this.link = null;
+            }
+        }
+    }
+
+    public URL getLink() {
+        return link;
+    }
+
+    public void setLink(URL link) {
+        this.link = link;
+    }
 
 }
